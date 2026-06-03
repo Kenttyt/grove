@@ -1,0 +1,21 @@
+<svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circle background -->
+  <circle cx="50" cy="50" r="45" fill="#2d7a6e"/>
+  
+  <!-- Roots -->
+  <path d="M35 75 Q30 85 25 95 Q23 100 28 105 Q35 100 40 90" stroke="#e8f5e9" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+  <path d="M50 75 L50 100 Q50 105 55 105 Q60 105 60 100 L60 75" stroke="#e8f5e9" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+  <path d="M65 75 Q70 85 75 95 Q77 100 72 105 Q65 100 60 90" stroke="#e8f5e9" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+  
+  <!-- Trunk -->
+  <rect x="47" y="55" width="6" height="25" fill="#e8d4b8" rx="2"/>
+  
+  <!-- Foliage - main canopy -->
+  <circle cx="50" cy="35" r="22" fill="#52b788" opacity="0.95"/>
+  <circle cx="35" cy="40" r="16" fill="#52b788" opacity="0.95"/>
+  <circle cx="65" cy="40" r="16" fill="#52b788" opacity="0.95"/>
+  <circle cx="45" cy="22" r="14" fill="#40916c" opacity="0.95"/>
+  <circle cx="55" cy="22" r="14" fill="#40916c" opacity="0.95"/>
+  <circle cx="30" cy="28" r="12" fill="#2d7a6e" opacity="0.9"/>
+  <circle cx="70" cy="28" r="12" fill="#2d7a6e" opacity="0.9"/>
+</svg>

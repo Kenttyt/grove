@@ -1,0 +1,32 @@
+<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="treeGradient" x1="64" y1="20" x2="64" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#e8f5e9"/>
+      <stop offset="100%" stopColor="#1b5e3f"/>
+    </linearGradient>
+    <linearGradient id="trunkGradient" x1="64" y1="70" x2="64" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#d4c5a9"/>
+      <stop offset="100%" stopColor="#5c3f2c"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle background -->
+  <circle cx="64" cy="64" r="60" fill="#1c6d45"/>
+  
+  <!-- Tree foliage -->
+  <path d="M50 45c-7-8-17-9-26-2s-10 16-4 24 16 10 24 6c0 0-3 10 2 16s14 8 22 4c8 4 18 3 22-4s2-16 2-16c8 4 20 3 24-6s2-18-4-24-19-6-26 2c0 0 2-7-2-12s-12-9-16-6-7 10-6 12c-3-5-11-6-16-2s-5 10-5 10Z" fill="url(#treeGradient)"/>
+  
+  <!-- Trunk -->
+  <path d="M62 70v40" stroke="url(#trunkGradient)" strokeWidth="8" strokeLinecap="round"/>
+  
+  <!-- Root details -->
+  <path d="M52 85c2 6 3 14 5 20" stroke="url(#trunkGradient)" strokeWidth="4" strokeLinecap="round"/>
+  <path d="M76 85c-2 6-3 14-5 20" stroke="url(#trunkGradient)" strokeWidth="4" strokeLinecap="round"/>
+  
+  <!-- Decorative airplane/star icon top right -->
+  <g transform="translate(95, 30)">
+    <circle cx="0" cy="0" r="12" fill="white" opacity="0.9"/>
+    <path d="M-2,-6 L2,-6 L0,3 Z" fill="#1c6d45"/>
+    <path d="M-5,0 L5,0" stroke="#1c6d45" strokeWidth="1" strokeLinecap="round"/>
+  </g>
+</svg>

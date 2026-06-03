@@ -1,0 +1,8 @@
+{
+  "name": "leoworks/email-verification-api",
+  "description": "PHP backend for email verification",
+  "type": "project",
+  "require": {
+    "phpmailer/phpmailer": "^6.9"
+  }
+}
