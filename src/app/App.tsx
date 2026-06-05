@@ -10,7 +10,7 @@ import { AddMonitoringRecord } from './components';
 import { SettingsPage } from './components/SettingsPage';
 import { SystemStatusPage } from './components/SystemStatusPage';
 import { apiUrl } from '@/utils/apiBase';
-import logoSidebar from '@/assets/logo-sidebar.svg';
+import logoSidebar from '@/assets/mangrove.jpg';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -73,75 +73,28 @@ export default function App() {
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
-      type: 'check',
-      title: 'Plant Check Reminder',
-      message: 'Time to check Rhizophora apiculata in Area B-12',
-      date: '2026-04-12',
-      nextCheckDate: '2026-04-19',
-      targetPage: 'monitoring',
+      type: 'info',
+      title: 'New report submitted',
+      message: 'A new monitoring report has been submitted and is ready for review.',
+      date: '2026-06-04',
+      targetPage: 'reports',
       isRead: false,
     },
     {
       id: '2',
       type: 'check',
-      title: 'Scheduled Monitoring',
-      message: 'Monthly assessment for Avicennia marina in Area C-5',
-      date: '2026-04-12',
-      nextCheckDate: '2026-05-12',
+      title: 'Mangrove status updated',
+      message: 'The health status of mangrove areas in Panabo City has been updated.',
+      date: '2026-06-04',
       targetPage: 'monitoring',
       isRead: false,
     },
     {
       id: '3',
       type: 'alert',
-      title: 'Growth Rate Alert',
-      message: 'Unusual growth pattern detected in Area A-3',
-      date: '2026-04-11',
-      targetPage: 'monitoring',
-      isRead: true,
-    },
-    {
-      id: '4',
-      type: 'info',
-      title: 'Data Sync Complete',
-      message: 'All monitoring data has been synchronized',
-      date: '2026-04-10',
-      targetPage: 'monitoring',
-      isRead: true,
-    },
-    {
-      id: '5',
-      type: 'info',
-      title: 'Report Summary Ready',
-      message: 'Your monthly mangrove health report is ready to view',
-      date: '2026-05-05',
-      targetPage: 'reports',
-      isRead: false,
-    },
-    {
-      id: '6',
-      type: 'alert',
-      title: 'Research Insight Available',
-      message: 'New findings are available from the coastal biodiversity study',
-      date: '2026-05-04',
-      targetPage: 'research',
-      isRead: false,
-    },
-    {
-      id: '7',
-      type: 'check',
-      title: 'Analytics Trend Alert',
-      message: 'A key metric crossed the alert threshold in analytics',
-      date: '2026-05-03',
-      targetPage: 'analytics',
-      isRead: false,
-    },
-    {
-      id: '8',
-      type: 'check',
-      title: 'Mapping Data Updated',
-      message: 'New satellite imagery has been added to the mapping dashboard',
-      date: '2026-05-02',
+      title: 'Critical damage alert',
+      message: 'Critical damage detected in a monitored mangrove zone. Immediate attention required.',
+      date: '2026-06-04',
       targetPage: 'mapping',
       isRead: false,
     },
@@ -453,23 +406,32 @@ export default function App() {
 
         <AnimatePresence>
           {isMobileSidebarOpen && (
-            <motion.div
-              className="fixed inset-y-0 left-0 z-50 w-20 lg:hidden"
-              initial={{ x: -80, opacity: 0.95 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -80, opacity: 0.95 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            >
-              <Sidebar
-                activeItem={activeMenuItem}
-                onItemClick={(item) => {
-                  setActiveMenuItem(item);
-                  setIsMobileSidebarOpen(false);
-                }}
-                collapsed={false}
-                onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+            <>
+              <motion.div
+                className="fixed inset-0 z-[1200] bg-black/40 lg:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileSidebarOpen(false)}
               />
-            </motion.div>
+              <motion.div
+                className="fixed inset-y-0 left-0 z-[1300] w-20 lg:hidden"
+                initial={{ x: -80, opacity: 0.95 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -80, opacity: 0.95 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+              >
+                <Sidebar
+                  activeItem={activeMenuItem}
+                  onItemClick={(item) => {
+                    setActiveMenuItem(item);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  collapsed={false}
+                  onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+                />
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
@@ -579,12 +541,12 @@ export default function App() {
                 />
               )}
               {activeMenuItem === 'addRecord' && <AddMonitoringRecord />}
-              {(activeMenuItem === 'mapping' || activeMenuItem === 'monitoring' || activeMenuItem === 'reports' || activeMenuItem === 'research') && (
+              {(activeMenuItem === 'mapping' || activeMenuItem === 'monitoring' || activeMenuItem === 'reports') && (
                 <MappingAreas
-                  initialTab={activeMenuItem === 'mapping' ? 'map' : (activeMenuItem as 'monitoring' | 'reports' | 'research')}
+                  initialTab={activeMenuItem === 'mapping' ? 'map' : (activeMenuItem as 'monitoring' | 'reports')}
                 />
               )}
-              {activeMenuItem !== 'dashboard' && activeMenuItem !== 'analytics' && activeMenuItem !== 'mapping' && activeMenuItem !== 'research' && activeMenuItem !== 'settings' && activeMenuItem !== 'monitoring' && activeMenuItem !== 'reports' && activeMenuItem !== 'addRecord' && (
+              {activeMenuItem !== 'dashboard' && activeMenuItem !== 'analytics' && activeMenuItem !== 'mapping' && activeMenuItem !== 'settings' && activeMenuItem !== 'monitoring' && activeMenuItem !== 'reports' && activeMenuItem !== 'addRecord' && (
                 <div className="text-center py-12">
                   <h2 className="text-muted-foreground">
                     {activeMenuItem.charAt(0).toUpperCase() + activeMenuItem.slice(1)} - Coming Soon
@@ -619,7 +581,7 @@ export default function App() {
           <div className="mb-6">
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
               <div className="size-16 rounded-full flex items-center justify-center shadow-2xl shadow-primary/20 border border-white/15 bg-white/10">
-                <img src={logoSidebar} alt="Mangrove Logo" className="size-9" />
+                <img src={logoSidebar} alt="Mangrove Logo" className="size-9 rounded-full object-cover" />
               </div>
               <h1 className="text-4xl lg:text-5xl text-primary font-semibold">Mangrove</h1>
             </div>

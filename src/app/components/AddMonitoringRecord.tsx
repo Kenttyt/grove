@@ -128,6 +128,9 @@ const initialFormState = {
   condition: 'Good',
   currentHeight: '',
   survivalStatus: 'Alive',
+  growingCount: '',
+  atRiskCount: '',
+  deadCount: '',
   photo: null as File | null,
 };
 
@@ -411,11 +414,38 @@ export function AddMonitoringRecord() {
     if (!formState.monitoringDate) {
       errors.monitoringDate = 'Monitoring date is required.';
     }
-    if (!formState.condition) {
-      errors.condition = 'Condition is required.';
-    }
-    if (!formState.survivalStatus) {
-      errors.survivalStatus = 'Survival status is required.';
+    if (formState.plantingMethod !== 'Direct Planting') {
+      const growing = Number(formState.growingCount);
+      const atRisk = Number(formState.atRiskCount);
+      const dead = Number(formState.deadCount);
+      const total = Number(formState.numberSeedlings);
+
+      if (formState.growingCount.trim() === '') {
+        errors.growingCount = 'Growing count is required.';
+      } else if (Number.isNaN(growing) || growing < 0) {
+        errors.growingCount = 'Must be a valid positive number.';
+      }
+
+      if (formState.atRiskCount.trim() === '') {
+        errors.atRiskCount = 'At Risk count is required.';
+      } else if (Number.isNaN(atRisk) || atRisk < 0) {
+        errors.atRiskCount = 'Must be a valid positive number.';
+      }
+
+      if (formState.deadCount.trim() === '') {
+        errors.deadCount = 'Dead count is required.';
+      } else if (Number.isNaN(dead) || dead < 0) {
+        errors.deadCount = 'Must be a valid positive number.';
+      }
+
+      if (!errors.growingCount && !errors.atRiskCount && !errors.deadCount) {
+        if (growing + atRisk + dead !== total) {
+          const sumErr = `The sum of Growing (${growing}), At Risk (${atRisk}), and Dead (${dead}) must equal Number of Seedlings (${total}).`;
+          errors.growingCount = sumErr;
+          errors.atRiskCount = sumErr;
+          errors.deadCount = sumErr;
+        }
+      }
     }
 
     if (Object.keys(errors).length > 0) {
@@ -436,9 +466,10 @@ export function AddMonitoringRecord() {
     formData.append('planting_method', formState.plantingMethod.trim());
     formData.append('number_seedlings', formState.numberSeedlings.trim());
     formData.append('monitoring_date', formState.monitoringDate);
-    formData.append('condition', formState.condition);
-    formData.append('current_height_cm', formState.currentHeight.trim());
-    formData.append('survival_status', formState.survivalStatus);
+    formData.append('growing_count', formState.plantingMethod === 'Direct Planting' ? formState.numberSeedlings.trim() : formState.growingCount.trim());
+    formData.append('at_risk_count', formState.plantingMethod === 'Direct Planting' ? '0' : formState.atRiskCount.trim());
+    formData.append('dead_count', formState.plantingMethod === 'Direct Planting' ? '0' : formState.deadCount.trim());
+    formData.append('current_height_cm', formState.plantingMethod === 'Direct Planting' ? '' : formState.currentHeight.trim());
     formData.append('status', status);
 
     if (formState.photo) {
@@ -697,6 +728,32 @@ export function AddMonitoringRecord() {
                     </div>
                   )}
                 </div>
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-card/60 border border-border/50 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Site Name</span>
+                    <span className="font-semibold text-foreground truncate block">
+                      {formState.siteName || <span className="text-muted-foreground italic font-normal">Not entered yet</span>}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Barangay</span>
+                    <span className="font-semibold text-foreground truncate block">
+                      {formState.barangay || <span className="text-muted-foreground italic font-normal">Not selected yet</span>}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Latitude</span>
+                    <span className="font-semibold font-mono text-foreground block">
+                      {formState.latitude || <span className="text-muted-foreground italic font-normal">Not pinned</span>}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Longitude</span>
+                    <span className="font-semibold font-mono text-foreground block">
+                      {formState.longitude || <span className="text-muted-foreground italic font-normal">Not pinned</span>}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -735,6 +792,7 @@ export function AddMonitoringRecord() {
                   value={formState.datePlanted}
                   onChange={(event) => updateField('datePlanted', event.target.value)}
                   className={getControlClass('datePlanted')}
+                  min={new Date().toLocaleDateString('sv-SE')}
                 />
                 {getErrorMessage('datePlanted')}
               </div>
@@ -789,45 +847,57 @@ export function AddMonitoringRecord() {
                 />
                 {getErrorMessage('monitoringDate')}
               </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Condition *</label>
-                <select
-                  ref={(element) => { formRefs.current.condition = element; }}
-                  value={formState.condition}
-                  onChange={(event) => updateField('condition', event.target.value)}
-                  className={getControlClass('condition') + ' cursor-pointer'}
-                >
-                  {conditionOptions.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-                {getErrorMessage('condition')}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Current Height (cm)</label>
-                <input
-                  type="number"
-                  value={formState.currentHeight}
-                  onChange={(event) => updateField('currentHeight', event.target.value)}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition duration-200 cursor-text placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
-                  placeholder="Enter height in cm"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Survival Status *</label>
-                <select
-                  ref={(element) => { formRefs.current.survivalStatus = element; }}
-                  value={formState.survivalStatus}
-                  onChange={(event) => updateField('survivalStatus', event.target.value)}
-                  className={getControlClass('survivalStatus') + ' cursor-pointer'}
-                >
-                  {survivalOptions.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-                {getErrorMessage('survivalStatus')}
-              </div>
+              {formState.plantingMethod !== 'Direct Planting' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Growing Count *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formState.growingCount}
+                      onChange={(event) => updateField('growingCount', event.target.value)}
+                      className={getControlClass('growingCount')}
+                      placeholder="Number of growing plants"
+                    />
+                    {getErrorMessage('growingCount')}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">At Risk Count *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formState.atRiskCount}
+                      onChange={(event) => updateField('atRiskCount', event.target.value)}
+                      className={getControlClass('atRiskCount')}
+                      placeholder="Number of at risk plants"
+                    />
+                    {getErrorMessage('atRiskCount')}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Dead Count *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formState.deadCount}
+                      onChange={(event) => updateField('deadCount', event.target.value)}
+                      className={getControlClass('deadCount')}
+                      placeholder="Number of dead plants"
+                    />
+                    {getErrorMessage('deadCount')}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Current Height (cm)</label>
+                    <input
+                      type="number"
+                      value={formState.currentHeight}
+                      onChange={(event) => updateField('currentHeight', event.target.value)}
+                      className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition duration-200 cursor-text placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10"
+                      placeholder="Enter height in cm"
+                      min="0"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

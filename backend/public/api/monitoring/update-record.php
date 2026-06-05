@@ -48,7 +48,8 @@ if ($recordId <= 0) {
     send_json(400, ['message' => 'Invalid record ID.']);
 }
 
-if ($siteName === '' || $barangay === '' || $latitude === '' || $longitude === '' || $species === '' || $datePlanted === '' || $numberSeedlings === '' || $monitoringDate === '' || $condition === '' || $survivalStatus === '') {
+$isDirectPlanting = ($plantingMethod === 'Direct Planting');
+if ($siteName === '' || $barangay === '' || $latitude === '' || $longitude === '' || $species === '' || $datePlanted === '' || $numberSeedlings === '' || $monitoringDate === '') {
     send_json(400, ['message' => 'Missing required fields.']);
 }
 
@@ -75,6 +76,47 @@ if ($numberSeedlingsValue === false) {
 
 if ($currentHeightCm !== '' && $currentHeightValue === false) {
     send_json(400, ['message' => 'Current height must be a whole number.']);
+}
+
+$growingCount = isset($input['growing_count']) && $input['growing_count'] !== '' ? filter_var($input['growing_count'], FILTER_VALIDATE_INT) : null;
+$atRiskCount = isset($input['at_risk_count']) && $input['at_risk_count'] !== '' ? filter_var($input['at_risk_count'], FILTER_VALIDATE_INT) : null;
+$deadCount = isset($input['dead_count']) && $input['dead_count'] !== '' ? filter_var($input['dead_count'], FILTER_VALIDATE_INT) : null;
+
+if ($growingCount === null || $growingCount === false || $atRiskCount === null || $atRiskCount === false || $deadCount === null || $deadCount === false) {
+    if ($isDirectPlanting) {
+        $growingCount = $numberSeedlingsValue;
+        $atRiskCount = 0;
+        $deadCount = 0;
+    } else {
+        send_json(400, ['message' => 'Growing, At Risk, and Dead counts are required.']);
+    }
+}
+
+if (($growingCount + $atRiskCount + $deadCount) !== $numberSeedlingsValue) {
+    send_json(400, ['message' => 'The sum of Growing, At Risk, and Dead plants must equal the total Number of Seedlings.']);
+}
+
+if ($isDirectPlanting && $growingCount === $numberSeedlingsValue && $atRiskCount === 0 && $deadCount === 0) {
+    $survivalStatus = 'Newly Planted';
+    $condition = 'Good';
+} else {
+    if ($deadCount >= $numberSeedlingsValue) {
+        $survivalStatus = 'Not Surviving';
+    } else if ($growingCount >= $atRiskCount && $growingCount >= $deadCount) {
+        $survivalStatus = 'Surviving';
+    } else if ($atRiskCount >= $growingCount && $atRiskCount >= $deadCount) {
+        $survivalStatus = 'At Risk';
+    } else {
+        $survivalStatus = 'Not Surviving';
+    }
+
+    if ($growingCount >= $atRiskCount && $growingCount >= $deadCount) {
+        $condition = 'Good';
+    } else if ($atRiskCount >= $growingCount && $atRiskCount >= $deadCount) {
+        $condition = 'Fair';
+    } else {
+        $condition = 'Poor';
+    }
 }
 
 try {
@@ -107,7 +149,10 @@ try {
             water_condition = :water_condition,
             water_salinity = :water_salinity,
             tide_condition = :tide_condition,
-            status = :status
+            status = :status,
+            growing_count = :growing_count,
+            at_risk_count = :at_risk_count,
+            dead_count = :dead_count
         WHERE id = :id'
     );
 
@@ -130,6 +175,9 @@ try {
         'water_salinity' => $waterSalinity,
         'tide_condition' => $tideCondition,
         'status' => $status,
+        'growing_count' => $growingCount,
+        'at_risk_count' => $atRiskCount,
+        'dead_count' => $deadCount,
         'id' => $recordId,
     ]);
 

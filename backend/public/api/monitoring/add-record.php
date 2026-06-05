@@ -34,13 +34,10 @@ $condition = trim((string) ($_POST['condition'] ?? ''));
 $currentHeightCm = trim((string) ($_POST['current_height_cm'] ?? ''));
 $survival_status = trim((string) ($_POST['survival_status'] ?? ''));
 $remarks = trim((string) ($_POST['remarks'] ?? ''));
-$soilType = trim((string) ($_POST['soil_type'] ?? ''));
-$waterCondition = trim((string) ($_POST['water_condition'] ?? ''));
-$waterSalinity = trim((string) ($_POST['water_salinity'] ?? ''));
-$tideCondition = trim((string) ($_POST['tide_condition'] ?? ''));
 $status = trim((string) ($_POST['status'] ?? 'published'));
 
-if ($siteName === '' || $barangay === '' || $latitude === '' || $longitude === '' || $species === '' || $datePlanted === '' || $numberSeedlings === '' || $monitoringDate === '' || $condition === '' || $survival_status === '' ) {
+$isDirectPlanting = ($plantingMethod === 'Direct Planting');
+if ($siteName === '' || $barangay === '' || $latitude === '' || $longitude === '' || $species === '' || $datePlanted === '' || $numberSeedlings === '' || $monitoringDate === '') {
     send_json(400, ['message' => 'Missing required fields.']);
 }
 
@@ -67,6 +64,47 @@ if ($numberSeedlingsValue === false) {
 
 if ($currentHeightCm !== '' && $currentHeightValue === false) {
     send_json(400, ['message' => 'Current height must be a whole number.']);
+}
+
+$growingCount = isset($_POST['growing_count']) && $_POST['growing_count'] !== '' ? filter_var($_POST['growing_count'], FILTER_VALIDATE_INT) : null;
+$atRiskCount = isset($_POST['at_risk_count']) && $_POST['at_risk_count'] !== '' ? filter_var($_POST['at_risk_count'], FILTER_VALIDATE_INT) : null;
+$deadCount = isset($_POST['dead_count']) && $_POST['dead_count'] !== '' ? filter_var($_POST['dead_count'], FILTER_VALIDATE_INT) : null;
+
+if ($growingCount === null || $growingCount === false || $atRiskCount === null || $atRiskCount === false || $deadCount === null || $deadCount === false) {
+    if ($isDirectPlanting) {
+        $growingCount = $numberSeedlingsValue;
+        $atRiskCount = 0;
+        $deadCount = 0;
+    } else {
+        send_json(400, ['message' => 'Growing, At Risk, and Dead counts are required.']);
+    }
+}
+
+if (($growingCount + $atRiskCount + $deadCount) !== $numberSeedlingsValue) {
+    send_json(400, ['message' => 'The sum of Growing, At Risk, and Dead plants must equal the total Number of Seedlings.']);
+}
+
+if ($isDirectPlanting && $growingCount === $numberSeedlingsValue && $atRiskCount === 0 && $deadCount === 0) {
+    $survival_status = 'Newly Planted';
+    $condition = 'Good';
+} else {
+    if ($deadCount >= $numberSeedlingsValue) {
+        $survival_status = 'Not Surviving';
+    } else if ($growingCount >= $atRiskCount && $growingCount >= $deadCount) {
+        $survival_status = 'Surviving';
+    } else if ($atRiskCount >= $growingCount && $atRiskCount >= $deadCount) {
+        $survival_status = 'At Risk';
+    } else {
+        $survival_status = 'Not Surviving';
+    }
+
+    if ($growingCount >= $atRiskCount && $growingCount >= $deadCount) {
+        $condition = 'Good';
+    } else if ($atRiskCount >= $growingCount && $atRiskCount >= $deadCount) {
+        $condition = 'Fair';
+    } else {
+        $condition = 'Poor';
+    }
 }
 
 $photoPath = null;
@@ -114,12 +152,11 @@ try {
             current_height_cm,
             survival_status,
             remarks,
-            soil_type,
-            water_condition,
-            water_salinity,
-            tide_condition,
             photo_path,
-            status
+            status,
+            growing_count,
+            at_risk_count,
+            dead_count
         ) VALUES (
             :site_name,
             :barangay,
@@ -134,12 +171,11 @@ try {
             :current_height_cm,
             :survival_status,
             :remarks,
-            :soil_type,
-            :water_condition,
-            :water_salinity,
-            :tide_condition,
             :photo_path,
-            :status
+            :status,
+            :growing_count,
+            :at_risk_count,
+            :dead_count
         )'
     );
 
@@ -157,12 +193,11 @@ try {
         'current_height_cm' => $currentHeightValue,
         'survival_status' => $survival_status,
         'remarks' => $remarks,
-        'soil_type' => $soilType,
-        'water_condition' => $waterCondition,
-        'water_salinity' => $waterSalinity,
-        'tide_condition' => $tideCondition,
         'photo_path' => $photoPath,
         'status' => $status,
+        'growing_count' => $growingCount,
+        'at_risk_count' => $atRiskCount,
+        'dead_count' => $deadCount,
     ]);
 } catch (Throwable $e) {
     send_json(500, ['message' => 'Database error while saving the monitoring record.']);

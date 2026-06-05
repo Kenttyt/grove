@@ -1,5 +1,4 @@
-import logoSidebar from '@/assets/logo-sidebar.svg';
-import { PHDateTime } from './PHDateTime';
+import logoSidebar from '@/assets/mangrove.jpg';
 
 interface SidebarProps {
   activeItem: string;
@@ -15,7 +14,6 @@ export function Sidebar({ activeItem, onItemClick, collapsed, onToggleCollapse }
     { id: 'monitoring', label: 'Monitoring' },
     { id: 'addRecord', label: 'Add Record' },
     { id: 'reports', label: 'Reports' },
-    { id: 'research', label: 'Research Data' },
     { id: 'analytics', label: 'Analytics' },
     { id: 'settings', label: 'Settings' },
   ];
@@ -25,7 +23,7 @@ export function Sidebar({ activeItem, onItemClick, collapsed, onToggleCollapse }
       <div className={`p-6 border-b border-sidebar-border ${collapsed ? 'px-3' : ''}`}>
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <div className="size-12 flex items-center justify-center">
-            <img src={logoSidebar} alt="Mangrove Logo" className="size-10" />
+            <img src={logoSidebar} alt="Mangrove Logo" className="size-10 rounded-full object-cover" />
           </div>
           {!collapsed && (
             <div className="hidden lg:block">
@@ -62,11 +60,6 @@ export function Sidebar({ activeItem, onItemClick, collapsed, onToggleCollapse }
             {item.id === 'mapping' && (
               <svg className={`size-5 shrink-0 transition-all duration-200 ease-out ${activeItem === item.id ? 'scale-105 drop-shadow-[0_0_6px_rgba(255,255,255,0.45)] text-sidebar-primary-foreground' : 'text-sidebar-foreground/80 group-hover:text-sidebar-accent-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            )}
-            {item.id === 'research' && (
-              <svg className={`size-5 shrink-0 transition-all duration-200 ease-out ${activeItem === item.id ? 'scale-105 drop-shadow-[0_0_6px_rgba(255,255,255,0.45)] text-sidebar-primary-foreground' : 'text-sidebar-foreground/80 group-hover:text-sidebar-accent-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
               </svg>
             )}
             {item.id === 'monitoring' && (
@@ -106,7 +99,7 @@ export function Sidebar({ activeItem, onItemClick, collapsed, onToggleCollapse }
         ))}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border space-y-2">
+      <div className="p-4 border-t border-sidebar-border">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -117,24 +110,6 @@ export function Sidebar({ activeItem, onItemClick, collapsed, onToggleCollapse }
           </svg>
           <span className="hidden lg:inline">{collapsed ? 'Expand Menu' : 'Collapse Menu'}</span>
         </button>
-        {collapsed ? (
-          <div className="hidden lg:block px-2 text-center text-xs text-sidebar-foreground/50">
-            <div className="font-semibold">PHT</div>
-            <div className="text-[10px]">Philippine Time</div>
-          </div>
-        ) : (
-          <div className="hidden lg:block px-2 text-xs text-sidebar-foreground/50">
-            <div className="flex items-center gap-2">
-              <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Philippine Time (PHT)</span>
-            </div>
-            <div className="mt-2">
-              <PHDateTime />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

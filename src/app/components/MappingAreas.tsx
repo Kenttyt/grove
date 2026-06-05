@@ -33,13 +33,12 @@ interface MonitoringRecord {
   current_height_cm: number | null;
   survival_status: string;
   remarks: string;
-  soil_type: string;
-  water_condition: string;
-  water_salinity: string;
-  tide_condition: string;
   photo_path: string | null;
   status: string;
   created_at?: string;
+  growing_count: number | null;
+  at_risk_count: number | null;
+  dead_count: number | null;
 }
 
 interface ResearchStudy {
@@ -163,7 +162,7 @@ const researchStudies: ResearchStudy[] = [
   }
 ];
 
-type MappingTab = 'map' | 'mapping' | 'research' | 'monitoring' | 'reports';
+type MappingTab = 'map' | 'mapping' | 'monitoring' | 'reports';
 
 interface MappingAreasProps {
   initialTab?: MappingTab;
@@ -407,10 +406,9 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
     current_height_cm: string;
     survival_status: string;
     remarks: string;
-    soil_type: string;
-    water_condition: string;
-    water_salinity: string;
-    tide_condition: string;
+    growing_count: string;
+    at_risk_count: string;
+    dead_count: string;
   }>({
     site_name: '',
     barangay: '',
@@ -425,10 +423,9 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
     current_height_cm: '',
     survival_status: '',
     remarks: '',
-    soil_type: '',
-    water_condition: '',
-    water_salinity: '',
-    tide_condition: '',
+    growing_count: '',
+    at_risk_count: '',
+    dead_count: '',
   });
 
   const openEditModal = (record: MonitoringRecord) => {
@@ -448,16 +445,21 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       current_height_cm: record.current_height_cm !== null ? String(record.current_height_cm) : '',
       survival_status: record.survival_status,
       remarks: record.remarks || '',
-      soil_type: record.soil_type || '',
-      water_condition: record.water_condition || '',
-      water_salinity: record.water_salinity || '',
-      tide_condition: record.tide_condition || '',
+      growing_count: record.growing_count !== null ? String(record.growing_count) : '',
+      at_risk_count: record.at_risk_count !== null ? String(record.at_risk_count) : '',
+      dead_count: record.dead_count !== null ? String(record.dead_count) : '',
     });
   };
 
   const openProgressModal = (record: MonitoringRecord) => {
     setIsProgressMode(true);
     setEditingRecord(record);
+    
+    // Total seedlings for the new progress update should adjust to exclude already dead seedlings
+    const lastGrowing = record.growing_count !== null ? record.growing_count : record.number_seedlings;
+    const lastAtRisk = record.at_risk_count !== null ? record.at_risk_count : 0;
+    const total = lastGrowing + lastAtRisk;
+
     setEditForm({
       site_name: record.site_name,
       barangay: record.barangay,
@@ -466,16 +468,15 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       species: record.species,
       date_planted: record.date_planted,
       planting_method: record.planting_method || '',
-      number_seedlings: String(record.number_seedlings),
+      number_seedlings: String(total),
       monitoring_date: new Date().toISOString().slice(0, 10),
-      condition_status: record.condition_status,
+      condition_status: '',
       current_height_cm: '',
-      survival_status: record.survival_status,
+      survival_status: '',
       remarks: '',
-      soil_type: record.soil_type || '',
-      water_condition: record.water_condition || '',
-      water_salinity: record.water_salinity || '',
-      tide_condition: record.tide_condition || '',
+      growing_count: String(total),
+      at_risk_count: '0',
+      dead_count: '0',
     });
   };
 
@@ -484,17 +485,99 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
     setIsProgressMode(false);
   };
 
+  const handleGrowingCountChange = (val: string) => {
+    const total = parseInt(editForm.number_seedlings, 10) || 0;
+    const growing = Math.min(total, Math.max(0, parseInt(val, 10) || 0));
+    const currentAtRisk = parseInt(editForm.at_risk_count, 10) || 0;
+    
+    let newDead = total - growing - currentAtRisk;
+    let newAtRisk = currentAtRisk;
+    if (newDead < 0) {
+      newAtRisk = Math.max(0, total - growing);
+      newDead = 0;
+    }
+    
+    setEditForm(prev => ({
+      ...prev,
+      growing_count: val,
+      dead_count: String(newDead),
+      at_risk_count: String(newAtRisk)
+    }));
+  };
+
+  const handleAtRiskCountChange = (val: string) => {
+    const total = parseInt(editForm.number_seedlings, 10) || 0;
+    const atRisk = Math.min(total, Math.max(0, parseInt(val, 10) || 0));
+    const currentDead = parseInt(editForm.dead_count, 10) || 0;
+    
+    let newGrowing = total - atRisk - currentDead;
+    let newDead = currentDead;
+    if (newGrowing < 0) {
+      newDead = Math.max(0, total - atRisk);
+      newGrowing = 0;
+    }
+    
+    setEditForm(prev => ({
+      ...prev,
+      at_risk_count: val,
+      growing_count: String(newGrowing),
+      dead_count: String(newDead)
+    }));
+  };
+
+  const handleDeadCountChange = (val: string) => {
+    const total = parseInt(editForm.number_seedlings, 10) || 0;
+    const dead = Math.min(total, Math.max(0, parseInt(val, 10) || 0));
+    const currentAtRisk = parseInt(editForm.at_risk_count, 10) || 0;
+    
+    let newGrowing = total - dead - currentAtRisk;
+    let newAtRisk = currentAtRisk;
+    if (newGrowing < 0) {
+      newAtRisk = Math.max(0, total - dead);
+      newGrowing = 0;
+    }
+    
+    setEditForm(prev => ({
+      ...prev,
+      dead_count: val,
+      growing_count: String(newGrowing),
+      at_risk_count: String(newAtRisk)
+    }));
+  };
+
   const handleUpdateRecordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRecord) return;
+    const total = parseInt(editForm.number_seedlings, 10) || 0;
+    const growing = parseInt(editForm.growing_count, 10) || 0;
+    const atRisk = parseInt(editForm.at_risk_count, 10) || 0;
+    const dead = parseInt(editForm.dead_count, 10) || 0;
+
+    if (growing + atRisk + dead !== total) {
+      alert(`Growing + At Risk + Dead must equal the total number of seedlings (${total}).`);
+      return;
+    }
+
     setIsUpdatingRecord(true);
     try {
+      const derivedStatus = editForm.planting_method === 'Direct Planting'
+        ? 'Newly Planted'
+        : (dead >= total
+            ? 'Not Surviving'
+            : (growing >= atRisk && growing >= dead
+                ? 'Surviving'
+                : (atRisk >= growing && atRisk >= dead ? 'At Risk' : 'Not Surviving')));
+
+      const derivedCondition = dead === total ? 'Poor' : atRisk > 0 ? 'Fair' : 'Good';
+
       const response = await fetch(apiUrl('/api/monitoring/update-record.php'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingRecord.id,
           ...editForm,
+          survival_status: derivedStatus,
+          condition_status: derivedCondition,
         }),
       });
 
@@ -504,7 +587,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       }
 
       alert('Record updated successfully!');
-      fetchMonitoringRecords({ resetPage: false, silent: true });
+      await fetchMonitoringRecords({ resetPage: false });
       closeEditModal();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Error updating record');
@@ -515,6 +598,17 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
 
   const handleProgressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const total = parseInt(editForm.number_seedlings, 10) || 0;
+    const growing = parseInt(editForm.growing_count, 10) || 0;
+    const atRisk = parseInt(editForm.at_risk_count, 10) || 0;
+    const dead = parseInt(editForm.dead_count, 10) || 0;
+
+    if (growing + atRisk + dead !== total) {
+      alert(`Growing + At Risk + Dead must equal the total number of seedlings (${total}).`);
+      return;
+    }
+
     setIsUpdatingRecord(true);
     try {
       const formData = new FormData();
@@ -527,14 +621,14 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       formData.append('planting_method', editForm.planting_method);
       formData.append('number_seedlings', editForm.number_seedlings);
       formData.append('monitoring_date', editForm.monitoring_date);
-      formData.append('condition', editForm.condition_status);
       formData.append('current_height_cm', editForm.current_height_cm);
-      formData.append('survival_status', editForm.survival_status);
+      formData.append('growing_count', String(growing));
+      formData.append('at_risk_count', String(atRisk));
+      formData.append('dead_count', String(dead));
+      const derivedStatus = deriveStatus(growing, atRisk, dead, total, editForm.planting_method);
+      formData.append('survival_status', derivedStatus);
+      formData.append('condition', dead === total ? 'Poor' : atRisk > 0 ? 'Fair' : 'Good');
       formData.append('remarks', editForm.remarks);
-      formData.append('soil_type', editForm.soil_type);
-      formData.append('water_condition', editForm.water_condition);
-      formData.append('water_salinity', editForm.water_salinity);
-      formData.append('tide_condition', editForm.tide_condition);
       formData.append('status', 'published');
 
       const response = await fetch(apiUrl('/api/monitoring/add-record.php'), {
@@ -548,7 +642,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       }
 
       alert('Progress update added successfully!');
-      fetchMonitoringRecords({ resetPage: false, silent: true });
+      await fetchMonitoringRecords({ resetPage: false });
       closeEditModal();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Error adding progress update');
@@ -558,8 +652,13 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
   };
 
 
-  const deleteRecord = async (recordId: number) => {
-    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+  const deleteRecord = async (recordId: number, deleteEntireHistory: boolean = false) => {
+    const targetRecord = monitoringRecords.find(r => r.id === recordId);
+    const confirmMessage = deleteEntireHistory
+      ? `Are you sure you want to delete the ENTIRE monitoring history for "${targetRecord?.site_name}"? This will delete all progress updates and cannot be undone.`
+      : 'Are you sure you want to delete this record? This action cannot be undone.';
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -567,7 +666,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       const response = await fetch(apiUrl('/api/monitoring/delete-record.php'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: recordId }),
+        body: JSON.stringify({ id: recordId, delete_entire_history: deleteEntireHistory }),
       });
 
       if (!response.ok) {
@@ -575,7 +674,11 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
         throw new Error(error.message || 'Failed to delete record');
       }
 
-      setMonitoringRecords(records => records.filter(r => r.id !== recordId));
+      if (deleteEntireHistory && targetRecord) {
+        setMonitoringRecords(records => records.filter(r => r.site_name !== targetRecord.site_name));
+      } else {
+        setMonitoringRecords(records => records.filter(r => r.id !== recordId));
+      }
       setCurrentPage(1);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to delete record');
@@ -594,7 +697,15 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
   // Filter monitoringRecords to keep only the latest record for each site (for the main table view)
   const latestMonitoringRecords = useMemo(() => {
     const latestMap = new Map<string, MonitoringRecord>();
-    for (const record of monitoringRecords) {
+    
+    // Sort records so the latest monitoring date / highest ID comes first
+    const sortedRecords = [...monitoringRecords].sort((a, b) => {
+      const dateDiff = new Date(b.monitoring_date).getTime() - new Date(a.monitoring_date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.id - a.id;
+    });
+
+    for (const record of sortedRecords) {
       if (!latestMap.has(record.site_name)) {
         latestMap.set(record.site_name, record);
       }
@@ -623,9 +734,9 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
       const lng = Number(record.longitude);
       
       let health: 'healthy' | 'monitoring' | 'critical' = 'healthy';
-      if (record.survival_status === 'Dead') {
+      if (record.survival_status === 'Not Surviving' || record.survival_status === 'Dead') {
         health = 'critical';
-      } else if (record.condition_status === 'Poor' || record.condition_status === 'Fair') {
+      } else if (record.survival_status === 'At Risk' || record.condition_status === 'Poor' || record.condition_status === 'Fair') {
         health = 'monitoring';
       }
 
@@ -665,10 +776,15 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
-      case 'Alive':
+      case 'Surviving':
         return 'bg-green-100 text-green-700 border border-green-300';
+      case 'At Risk':
+        return 'bg-amber-100 text-amber-700 border border-amber-300';
+      case 'Not Surviving':
       case 'Dead':
         return 'bg-red-100 text-red-700 border border-red-300';
+      case 'Newly Planted':
+        return 'bg-blue-100 text-blue-700 border border-blue-300';
       default:
         return 'bg-gray-100 text-gray-700 border border-gray-300';
     }
@@ -676,17 +792,30 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'Alive':
+      case 'Surviving':
         return 'Surviving';
+      case 'At Risk':
+        return 'At Risk';
+      case 'Not Surviving':
       case 'Dead':
         return 'Not Surviving';
+      case 'Newly Planted':
+        return 'Newly Planted';
       default:
         return status;
     }
   };
 
+  /** Derive survival_status from the three counts */
+  const deriveStatus = (growing: number, atRisk: number, dead: number, total: number, plantingMethod: string): string => {
+    if (plantingMethod === 'Direct Planting' && growing === total && atRisk === 0 && dead === 0) return 'Newly Planted';
+    if (dead >= total) return 'Not Surviving';
+    if (growing >= atRisk && growing >= dead) return 'Surviving';
+    if (atRisk >= growing && atRisk >= dead) return 'At Risk';
+    return 'Not Surviving';
+  };
+
   const isMapView = activeTab === 'map' || activeTab === 'mapping';
-  const isResearchOnlyView = activeTab === 'research';
   const isMonitoringView = activeTab === 'monitoring';
   const isReportsView = activeTab === 'reports';
 
@@ -804,9 +933,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h1>
-              {isResearchOnlyView
-                ? 'Research Data'
-                : isMonitoringView
+              {isMonitoringView
                 ? 'Monitoring Overview'
                 : 'Mapping Area'}
             </h1>
@@ -821,9 +948,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
             </div>
           </div>
           <p className="text-muted-foreground">
-            {isResearchOnlyView
-              ? 'Mangrove studies, biodiversity records, and ecological findings'
-              : isMonitoringView
+            {isMonitoringView
               ? 'Real-time monitoring status for vulnerable and newly planted zones'
               : 'Comprehensive mapping across mangrove planting sites'}
           </p>
@@ -1041,6 +1166,40 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
               Click on any marker to view details. Live monitoring points refresh every 15 seconds.
             </p>
           </div>
+
+          {/* Location Information Section */}
+          {latestMonitoringRecords.length > 0 && (
+            <div className="bg-card rounded-lg border border-border p-4">
+              <h3 className="font-semibold text-sm mb-3">📍 Location Information</h3>
+              <p className="text-xs text-muted-foreground mb-3">Site details and GPS coordinates for the new planting location.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {(() => {
+                  const record = latestMonitoringRecords[0];
+                  if (!record) return null;
+                  return (
+                    <>
+                      <div className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground">Site Name</span>
+                        <p className="text-sm font-semibold text-foreground mt-1">{record.site_name}</p>
+                      </div>
+                      <div className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground">Barangay</span>
+                        <p className="text-sm font-semibold text-foreground mt-1">{record.barangay}</p>
+                      </div>
+                      <div className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground">Latitude</span>
+                        <p className="text-sm font-semibold text-foreground mt-1 font-mono">{record.latitude}</p>
+                      </div>
+                      <div className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground">Longitude</span>
+                        <p className="text-sm font-semibold text-foreground mt-1 font-mono">{record.longitude}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </>
@@ -1084,6 +1243,9 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Barangay</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Species</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Planting Date</th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">Growing</th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">At Risk</th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">Dead</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">Actions</th>
                     </tr>
@@ -1096,6 +1258,21 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                         <td className="px-6 py-4 text-sm text-foreground">{record.barangay}</td>
                         <td className="px-6 py-4 text-sm text-foreground">{record.species}</td>
                         <td className="px-6 py-4 text-sm text-foreground">{formatPHDateShort(record.date_planted)}</td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600">
+                            {record.growing_count ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600">
+                            {record.at_risk_count ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-600">
+                            {record.dead_count ?? 0}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadgeStyle(record.survival_status)}`}>
                             {getStatusLabel(record.survival_status)}
@@ -1114,9 +1291,9 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                               Record
                             </button>
                             <button
-                              onClick={() => deleteRecord(record.id)}
+                              onClick={() => deleteRecord(record.id, true)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                              title="Delete record"
+                              title="Delete entire site history"
                             >
                               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1254,6 +1431,21 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                                 Edit
                               </button>
 
+                              {/* Remove Record button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  deleteRecord(item.id);
+                                }}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors shrink-0"
+                                title="Delete this record"
+                              >
+                                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Remove
+                              </button>
+
                               {/* Update Progress button ONLY for the latest/top record */}
                               {index === 0 && (
                                 <button
@@ -1286,14 +1478,28 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                               <span className="font-semibold text-foreground">{item.number_seedlings.toLocaleString()}</span>
                             </div>
                             <div>
-                              <span className="block text-xs text-muted-foreground">Water Salinity</span>
-                              <span className="font-semibold text-foreground">{item.water_salinity || 'N/A'}</span>
+                              <span className="block text-xs text-muted-foreground">Planting Date</span>
+                              <span className="font-semibold text-foreground">{formatPHDateShort(item.date_planted)}</span>
                             </div>
                             <div>
-                              <span className="block text-xs text-muted-foreground">Soil Condition</span>
-                              <span className="font-semibold text-foreground">{item.soil_type || 'N/A'}</span>
+                              <span className="block text-xs text-muted-foreground">Monitoring Date</span>
+                              <span className="font-semibold text-foreground">{formatPHDateShort(item.monitoring_date)}</span>
                             </div>
                           </div>
+
+                          {(item.growing_count !== null || item.at_risk_count !== null || item.dead_count !== null) && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-600">
+                                Growing: {item.growing_count ?? 0}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-600">
+                                At Risk: {item.at_risk_count ?? 0}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-600">
+                                Dead: {item.dead_count ?? 0}
+                              </span>
+                            </div>
+                          )}
 
                           {item.remarks && (
                             <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 mt-2 bg-background/30 p-2 rounded-lg">
@@ -1351,9 +1557,10 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                   <label className="block text-xs font-semibold mb-1 text-muted-foreground">Barangay *</label>
                   <select
                     required
+                    disabled={isProgressMode}
                     value={editForm.barangay}
                     onChange={(e) => setEditForm(prev => ({ ...prev, barangay: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:bg-secondary/40 disabled:text-muted-foreground disabled:cursor-not-allowed"
                   >
                     {barangayOptions.map((opt) => (
                       <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
@@ -1364,9 +1571,10 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                   <label className="block text-xs font-semibold mb-1 text-muted-foreground">Species *</label>
                   <select
                     required
+                    disabled={isProgressMode}
                     value={editForm.species}
                     onChange={(e) => setEditForm(prev => ({ ...prev, species: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:bg-secondary/40 disabled:text-muted-foreground disabled:cursor-not-allowed"
                   >
                     {speciesOptions.map((opt) => (
                       <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
@@ -1376,9 +1584,10 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                 <div>
                   <label className="block text-xs font-semibold mb-1 text-muted-foreground">Planting Method</label>
                   <select
+                    disabled={isProgressMode}
                     value={editForm.planting_method}
                     onChange={(e) => setEditForm(prev => ({ ...prev, planting_method: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:bg-secondary/40 disabled:text-muted-foreground disabled:cursor-not-allowed"
                   >
                     <option value="" className="bg-card text-foreground">None</option>
                     {plantingMethods.map((opt) => (
@@ -1391,10 +1600,11 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                   <input
                     type="number"
                     required
+                    disabled={isProgressMode}
                     min="1"
                     value={editForm.number_seedlings}
                     onChange={(e) => setEditForm(prev => ({ ...prev, number_seedlings: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:bg-secondary/40 disabled:text-muted-foreground disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -1402,9 +1612,10 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                   <input
                     type="date"
                     required
+                    disabled={isProgressMode}
                     value={editForm.date_planted}
                     onChange={(e) => setEditForm(prev => ({ ...prev, date_planted: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:bg-secondary/40 disabled:text-muted-foreground disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -1417,31 +1628,60 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                     className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Survival Status *</label>
-                  <select
-                    required
-                    value={editForm.survival_status}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, survival_status: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  >
-                    {survivalOptions.map((opt) => (
-                      <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Condition Status *</label>
-                  <select
-                    required
-                    value={editForm.condition_status}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, condition_status: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  >
-                    {conditionOptions.map((opt) => (
-                      <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
-                    ))}
-                  </select>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold mb-2 text-muted-foreground">
+                    Plant Condition Status
+                    <span className="ml-2 text-xs font-normal text-muted-foreground/70">
+                      (Total: {editForm.number_seedlings} seedlings — {Number(editForm.growing_count || 0) + Number(editForm.at_risk_count || 0)} active, {editForm.dead_count || 0} dead)
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                      <label className="block text-xs font-semibold mb-1 text-emerald-400">Growing</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max={editForm.number_seedlings}
+                        value={editForm.growing_count}
+                        onChange={(e) => handleGrowingCountChange(e.target.value)}
+                        className="w-full rounded-lg border border-emerald-500/30 bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                      />
+                    </div>
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                      <label className="block text-xs font-semibold mb-1 text-amber-400">At Risk</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max={editForm.number_seedlings}
+                        value={editForm.at_risk_count}
+                        onChange={(e) => handleAtRiskCountChange(e.target.value)}
+                        className="w-full rounded-lg border border-amber-500/30 bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
+                      />
+                    </div>
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
+                      <label className="block text-xs font-semibold mb-1 text-red-400">Dead</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max={editForm.number_seedlings}
+                        value={editForm.dead_count}
+                        onChange={(e) => handleDeadCountChange(e.target.value)}
+                        className="w-full rounded-lg border border-red-500/30 bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+                      />
+                    </div>
+                  </div>
+                  {(() => {
+                    const total = parseInt(editForm.number_seedlings, 10) || 0;
+                    const sum = (parseInt(editForm.growing_count, 10) || 0) + (parseInt(editForm.at_risk_count, 10) || 0) + (parseInt(editForm.dead_count, 10) || 0);
+                    return sum !== total ? (
+                      <p className="mt-2 text-xs text-red-400">⚠ Total is {sum} — must equal {total}</p>
+                    ) : (
+                      <p className="mt-2 text-xs text-emerald-400">✓ Counts match total seedlings</p>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1 text-muted-foreground">Average Tree Height (cm)</label>
@@ -1450,64 +1690,6 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                     min="0"
                     value={editForm.current_height_cm}
                     onChange={(e) => setEditForm(prev => ({ ...prev, current_height_cm: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Latitude *</label>
-                  <input
-                    type="number"
-                    step="0.0000001"
-                    required
-                    value={editForm.latitude}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, latitude: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Longitude *</label>
-                  <input
-                    type="number"
-                    step="0.0000001"
-                    required
-                    value={editForm.longitude}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, longitude: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Soil Type</label>
-                  <input
-                    type="text"
-                    value={editForm.soil_type}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, soil_type: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Water Condition</label>
-                  <input
-                    type="text"
-                    value={editForm.water_condition}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, water_condition: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Water Salinity</label>
-                  <input
-                    type="text"
-                    value={editForm.water_salinity}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, water_salinity: e.target.value }))}
-                    className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1 text-muted-foreground">Tide Condition</label>
-                  <input
-                    type="text"
-                    value={editForm.tide_condition}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, tide_condition: e.target.value }))}
                     className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
@@ -1532,8 +1714,34 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                 </button>
                 <button
                   type="submit"
-                  disabled={isUpdatingRecord}
-                  className="rounded-full bg-emerald-600 py-2 px-6 text-sm font-semibold text-white hover:bg-emerald-700 transition disabled:opacity-55"
+                  disabled={
+                    isUpdatingRecord ||
+                    (isProgressMode
+                      ? (
+                          editForm.growing_count === String(editingRecord?.number_seedlings ?? '') &&
+                          editForm.at_risk_count === '0' &&
+                          editForm.dead_count === '0' &&
+                          editForm.current_height_cm === '' &&
+                          editForm.remarks === '' &&
+                          editForm.monitoring_date === new Date().toISOString().slice(0, 10)
+                        )
+                      : (
+                          editForm.site_name === (editingRecord?.site_name ?? '') &&
+                          editForm.barangay === (editingRecord?.barangay ?? '') &&
+                          editForm.species === (editingRecord?.species ?? '') &&
+                          editForm.planting_method === (editingRecord?.planting_method ?? '') &&
+                          editForm.number_seedlings === String(editingRecord?.number_seedlings ?? '') &&
+                          editForm.date_planted === (editingRecord?.date_planted ?? '') &&
+                          editForm.monitoring_date === (editingRecord?.monitoring_date ?? '') &&
+                          editForm.current_height_cm === (editingRecord?.current_height_cm !== null ? String(editingRecord?.current_height_cm) : '') &&
+                          editForm.growing_count === (editingRecord?.growing_count !== null ? String(editingRecord?.growing_count) : '') &&
+                          editForm.at_risk_count === (editingRecord?.at_risk_count !== null ? String(editingRecord?.at_risk_count) : '') &&
+                          editForm.dead_count === (editingRecord?.dead_count !== null ? String(editingRecord?.dead_count) : '') &&
+                          editForm.remarks === (editingRecord?.remarks ?? '')
+                        )
+                    )
+                  }
+                  className="rounded-full bg-emerald-600 py-2 px-6 text-sm font-semibold text-white hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdatingRecord ? 'Saving...' : (isProgressMode ? 'Add Update' : 'Save Changes')}
                 </button>
@@ -1702,124 +1910,6 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {activeTab === 'research' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {researchStudies.map((study) => (
-              <div
-                key={study.id}
-                className="bg-card rounded-lg border border-border p-6 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:scale-[1.02]"
-                onClick={() => {
-                  setSelectedResearch(study);
-                  setShowResearchModal(true);
-                }}
-              >
-                <div className="size-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  {study.icon === 'document' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  )}
-                  {study.icon === 'flask' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                  )}
-                  {study.icon === 'balance' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
-                  )}
-                  {study.icon === 'globe' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                  {study.icon === 'book' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  )}
-                  {study.icon === 'chart' && (
-                    <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  )}
-                </div>
-                <h3 className="mb-2 font-semibold">{study.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{study.description}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Published: {study.publishedDate}</span>
-                  <button className="text-primary hover:underline font-medium">View</button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {showResearchModal && selectedResearch && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-card rounded-lg border border-border shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-card border-b border-border p-6 flex items-start justify-between">
-                  <div>
-                    <h2 className="text-2xl font-semibold mb-2">{selectedResearch.title}</h2>
-                    <p className="text-sm text-muted-foreground">Published: {selectedResearch.publishedDate}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowResearchModal(false);
-                      setSelectedResearch(null);
-                    }}
-                    className="text-muted-foreground hover:text-foreground ml-4"
-                  >
-                    <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Overview</h3>
-                    <p className="text-foreground">{selectedResearch.description}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-2">Research Details</h3>
-                    <p className="text-foreground whitespace-pre-wrap">{selectedResearch.fullContent}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-3">Authors</h3>
-                    <div className="space-y-2">
-                      {selectedResearch.authors.map((author) => (
-                        <div key={author} className="flex items-center gap-2">
-                          <div className="size-8 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-semibold">
-                            {author.charAt(0)}
-                          </div>
-                          <span className="text-sm text-foreground">{author}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-border">
-                    <button
-                      onClick={() => {
-                        setShowResearchModal(false);
-                        setSelectedResearch(null);
-                      }}
-                      className="w-full bg-primary text-primary-foreground rounded-lg py-2 px-4 font-medium transition-all duration-200 hover:shadow-md active:scale-95"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

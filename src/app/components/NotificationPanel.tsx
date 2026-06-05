@@ -63,7 +63,7 @@ export function NotificationPanel({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-16 right-8 w-96 bg-card rounded-lg shadow-lg border border-border z-50 max-h-[600px] flex flex-col">
+    <div className="fixed top-[72px] right-6 w-96 bg-card rounded-xl shadow-2xl border border-border z-[1400] max-h-[480px] flex flex-col">
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div>
           <h3 className="font-semibold">Notifications</h3>

@@ -42,13 +42,12 @@ try {
             current_height_cm,
             survival_status,
             remarks,
-            soil_type,
-            water_condition,
-            water_salinity,
-            tide_condition,
             photo_path,
             status,
-            created_at
+            created_at,
+            growing_count,
+            at_risk_count,
+            dead_count
         FROM monitoring_records
         WHERE status = "published"
         ORDER BY monitoring_date DESC, id DESC'

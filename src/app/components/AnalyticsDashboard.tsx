@@ -31,10 +31,6 @@ interface MonitoringRecord {
   current_height_cm: string;
   survival_status: string;
   remarks: string;
-  soil_type: string;
-  water_condition: string;
-  water_salinity: string;
-  tide_condition: string;
   photo_path: string;
   status: string;
   created_at: string;
@@ -388,7 +384,7 @@ export function AnalyticsDashboard() {
           </div>
           <div className="space-y-2 text-sm text-foreground">
             <p>• Focus review on recent records marked “At Risk” or “Not Surviving”.</p>
-            <p>• Add missing water condition readings to improve trend reporting.</p>
+            <p>• Keep all planting sites updated to ensure accurate reports.</p>
             <p>• Track performance by species and revisit low-growth areas.</p>
           </div>
         </div>
