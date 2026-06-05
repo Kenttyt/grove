@@ -14,6 +14,5 @@ return [
     'smtp_pass' => 'PUT_YOUR_GOOGLE_APP_PASSWORD_HERE',
     'smtp_from_email' => 'leo.andujar0515@gmail.com',
     'smtp_from_name' => 'Mangrove App',
-    'google_client_id' => '390904565283-t63k59mrhmqqt9r9d047scagp30enb13.apps.googleusercontent.com',
     'expose_public_status' => true,
 ];

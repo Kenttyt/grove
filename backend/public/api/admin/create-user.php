@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -22,12 +22,12 @@ require_once __DIR__ . '/../../../src/database.php';
 $config = require __DIR__ . '/../../../src/config.php';
 
 $body = read_json_body();
-$username = trim((string) (($body['username'] ?? '') !== '' ? $body['username'] : ($body['name'] ?? '')));
+$username = trim((string) ($body['username'] ?? ''));
 $password = (string) ($body['password'] ?? '');
-$confirmPassword = (string) ($body['confirmPassword'] ?? '');
+$role = trim((string) ($body['role'] ?? 'worker'));
 
-if ($username === '' || $password === '' || $confirmPassword === '') {
-    send_json(400, ['message' => 'Please fill in all required fields.']);
+if ($username === '' || $password === '') {
+    send_json(400, ['message' => 'Username and password are required.']);
 }
 
 if (mb_strlen($username) > 18) {
@@ -38,8 +38,8 @@ if (strlen($password) < 8) {
     send_json(400, ['message' => 'Password must be at least 8 characters.']);
 }
 
-if ($password !== $confirmPassword) {
-    send_json(400, ['message' => 'Passwords do not match.']);
+if (!in_array($role, ['admin', 'worker'])) {
+    send_json(400, ['message' => 'Role must be either admin or worker.']);
 }
 
 try {
@@ -53,21 +53,21 @@ try {
     }
 
     $insertStmt = $pdo->prepare(
-        'INSERT INTO users (username, password_hash) VALUES (:username, :password_hash)'
+        'INSERT INTO users (username, password_hash, role) VALUES (:username, :password_hash, :role)'
     );
     $insertStmt->execute([
         'username' => $username,
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'role' => $role,
     ]);
 } catch (Throwable $e) {
-    send_json(500, ['message' => 'Database error while creating account.']);
+    send_json(500, ['message' => 'Database error while creating user.']);
 }
 
 send_json(201, [
-    'message' => 'Account created successfully.',
+    'message' => 'User created successfully.',
     'user' => [
         'username' => $username,
-        'name' => $username,
+        'role' => $role,
     ],
 ]);
-

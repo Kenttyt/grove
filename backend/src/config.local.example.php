@@ -14,7 +14,6 @@ return [
     'smtp_pass' => 'your-google-app-password',
     'smtp_from_email' => 'your-email@gmail.com',
     'smtp_from_name' => 'Mangrove App',
-    'google_client_id' => 'your-google-oauth-client-id.apps.googleusercontent.com',
     // Set true for local/LAN diagnostics; omit or false on a public server.
     'expose_public_status' => true,
 ];

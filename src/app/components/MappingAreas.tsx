@@ -889,7 +889,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
 
   const markerStyle = useMemo(() => ({
     weight: 2,
-    color: '#ffffff',
+    color: 'transparent',
     fillOpacity: 0.9,
   }), []);
 
@@ -1540,7 +1540,7 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                     .map((item, index) => (
                       <div key={item.id} className="relative">
                         {/* Timeline dot */}
-                        <div className="absolute -left-[31px] top-2 size-4 rounded-full border-2 border-white bg-primary shadow-sm"></div>
+                        <div className="absolute -left-[31px] top-2 size-4 rounded-full bg-primary shadow-sm"></div>
 
                         <div className="bg-secondary/20 rounded-2xl border border-border p-4 hover:border-primary/30 transition-all">
                           {/* Card header row */}

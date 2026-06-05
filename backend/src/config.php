@@ -14,7 +14,6 @@ $defaults = [
     'smtp_pass' => getenv('SMTP_PASS') ?: '',
     'smtp_from_email' => getenv('SMTP_FROM_EMAIL') ?: '',
     'smtp_from_name' => getenv('SMTP_FROM_NAME') ?: 'Mangrove App',
-    'google_client_id' => getenv('GOOGLE_CLIENT_ID') ?: '',
     'code_expiry_seconds' => 600,
     /** When false, GET /api/system/status.php responds with 404 (hide diagnostics in production). */
     'expose_public_status' => filter_var(getenv('LEOWORKS_EXPOSE_PUBLIC_STATUS'), FILTER_VALIDATE_BOOLEAN),

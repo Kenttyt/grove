@@ -10,6 +10,7 @@ export interface Notification {
   nextCheckDate?: string;
   targetPage?: 'dashboard' | 'analytics' | 'mapping' | 'monitoring' | 'reports' | 'research' | 'settings' | 'addRecord';
   isRead: boolean;
+  role?: 'admin' | 'worker';
 }
 
 export function NotificationPanel({

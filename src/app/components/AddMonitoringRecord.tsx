@@ -706,7 +706,7 @@ export function AddMonitoringRecord() {
                                   {record.survival_status}
                                 </span>
                               </p>
-                              <p className="text-[10px] text-primary font-medium mt-1">✨ Site details loaded into form</p>
+                              
                             </div>
                           </div>
                         </Popup>
