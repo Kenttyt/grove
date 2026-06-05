@@ -661,8 +661,8 @@ export function AddMonitoringRecord() {
                         color: '#dc2626',
                         weight: 2.5,
                         opacity: 0.85,
-                        fillColor: '#dc2626',
-                        fillOpacity: 0.07,
+                        fillColor: 'transparent',
+                        fillOpacity: 0.0,
                         dashArray: '6 4',
                       }}
                     />
@@ -677,6 +677,18 @@ export function AddMonitoringRecord() {
                           color: '#0f172a',
                           fillColor: record.survival_status === 'Alive' ? '#2563eb' : (record.survival_status === 'Dead' ? '#dc2626' : '#0ea5e9'),
                           fillOpacity: 0.85,
+                        }}
+                        eventHandlers={{
+                          click: () => {
+                            updateField('siteName', record.site_name || '');
+                            updateField('barangay', record.barangay || '');
+                            updateField('latitude', String(record.latitude) || '');
+                            updateField('longitude', String(record.longitude) || '');
+                            updateField('species', record.species || '');
+                            updateField('datePlanted', record.date_planted || '');
+                            updateField('plantingMethod', record.planting_method || 'Direct Planting');
+                            updateField('numberSeedlings', String(record.number_seedlings) || '');
+                          }
                         }}
                       >
                         <Popup>
@@ -694,6 +706,7 @@ export function AddMonitoringRecord() {
                                   {record.survival_status}
                                 </span>
                               </p>
+                              <p className="text-[10px] text-primary font-medium mt-1">✨ Site details loaded into form</p>
                             </div>
                           </div>
                         </Popup>
@@ -709,8 +722,8 @@ export function AddMonitoringRecord() {
                   {!hasCoordinates && (
                     <div className="absolute inset-0 flex items-end justify-center pb-6 pointer-events-none z-[1000]">
                       <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-md border border-border text-xs text-muted-foreground flex items-center gap-2">
-                        <span className="text-base">🖱️</span>
-                        Click on the map to pin the mangrove location
+                        <span className="text-base"></span>
+                       Pin the mangrove location
                       </div>
                     </div>
                   )}
