@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardOverview } from './components/DashboardOverview';
@@ -34,11 +34,8 @@ const systemStatusUiAllowed =
 type UserRole = 'admin' | 'worker';
 
 export default function App() {
-  const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState('');
@@ -82,7 +79,6 @@ export default function App() {
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const filteredNotifications = notifications.filter((notification) => 
     notification.role === 'admin' || notification.role === userRole
   );
@@ -168,7 +164,6 @@ export default function App() {
   }, [isMobileSidebarOpen]);
 
   const getDisplayName = () => {
-    if (name.trim()) return name.trim();
     return username.split('@')[0] || 'User';
   };
 
@@ -176,32 +171,15 @@ export default function App() {
     e.preventDefault();
     setError('');
 
-    if (isLogin) {
-      if (!username.trim() || !password.trim()) {
-        setError('Please fill in all fields');
-        return;
-      }
-    } else {
-      if (!name.trim() || !password.trim() || !confirmPassword.trim()) {
-        setError('Please fill in all fields');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters');
-        return;
-      }
+    if (!username.trim() || !password.trim()) {
+      setError('Please fill in all fields');
+      return;
     }
 
     try {
       setIsSubmittingAuth(true);
-      const endpoint = apiUrl(isLogin ? '/api/auth/login.php' : '/api/auth/register.php');
-      const payload = isLogin
-        ? { username, password }
-        : { username: name, name, password, confirmPassword };
+      const endpoint = apiUrl('/api/auth/login.php');
+      const payload = { username, password };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -239,23 +217,12 @@ export default function App() {
 
 
 
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setError('');
-    setUsername('');
-    setPassword('');
-    setConfirmPassword('');
-    setName('');
-  };
-
   const handleLogout = () => {
     setIsLoggingOut(true);
     setTimeout(() => {
       setIsAuthenticated(false);
       setUsername('');
       setPassword('');
-      setConfirmPassword('');
-      setName('');
       setProfileImageUrl('');
       setActiveMenuItem('dashboard');
       setIsLoggingOut(false);
@@ -488,11 +455,11 @@ export default function App() {
           <span className="text-xl font-semibold text-primary">Mangrove</span>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-8 flex-wrap justify-center">
-          <button type="button" onClick={() => document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary transition-colors font-medium text-sm">Home</button>
-          <button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary transition-colors font-medium text-sm">About</button>
-          <button type="button" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary transition-colors font-medium text-sm">Features</button>
-          <button type="button" onClick={() => document.getElementById('map-preview')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary transition-colors font-medium text-sm">Map Preview</button>
+        <div className="flex items-center gap-6 md:gap-12 flex-wrap justify-center">
+          <button type="button" onClick={() => document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary hover:scale-105 transition-all duration-200 font-medium text-sm px-2 py-1">Home</button>
+          <button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary hover:scale-105 transition-all duration-200 font-medium text-sm px-2 py-1">About</button>
+          <button type="button" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary hover:scale-105 transition-all duration-200 font-medium text-sm px-2 py-1">Features</button>
+          <button type="button" onClick={() => document.getElementById('map-preview')?.scrollIntoView({ behavior: 'smooth' })} className="text-foreground hover:text-primary hover:scale-105 transition-all duration-200 font-medium text-sm px-2 py-1">Map Preview</button>
         </div>
 
       </nav>
@@ -529,210 +496,78 @@ export default function App() {
             className="w-full max-w-md mx-auto"
           >
             <div className="bg-white/95 border border-white/70 backdrop-blur-xl rounded-[28px] shadow-2xl shadow-slate-900/10 p-8">
-              <AnimatePresence mode="wait">
-                {isLogin ? (
-                <motion.div
-                  key="login"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input
+                    type="text"
+                    id="login-username"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                    placeholder="Username"
+                  />
+
+                  <div className="relative">
                     <input
-                      type="text"
-                      id="login-username"
-                      name="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      placeholder="Username"
+                      type={showPassword ? 'text' : 'password'}
+                      id="login-password"
+                      name="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow pr-12"
+                      placeholder="Password"
                     />
-
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="login-password"
-                        name="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow pr-12"
-                        placeholder="Password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 5C7 5 2.73 8.11 1 12.46c1.73 4.35 6 7.54 11 7.54s9.27-3.19 11-7.54C21.27 8.11 17 5 12 5m0 9c-1.38 0-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 11.5c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm7.31-7.31l.41.41 1.15 1.15c1.49 1.26 2.68 2.89 3.43 4.75-1.73 4.39-6 7.5-11 7.5-1.4 0-2.74-.25-3.98-.7l.41.41 2.15 2.15C10.74 16.87 11.35 17 12 17c2.76 0 5-2.24 5-5 0-.79-.2-1.53-.53-2.2l2.31 2.31c.13-.4.22-.82.22-1.27 0-2.76-2.24-5-5-5-.45 0-.87.09-1.27.22l2.15 2.15z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                    <AnimatePresence mode="wait">
-                      {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="text-destructive text-sm"
-                        >
-                          {error}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
                     <button
-                      type="submit"
-                      disabled={isSubmittingAuth}
-                      className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity font-semibold"
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {isSubmittingAuth ? 'Please wait...' : 'Log in'}
-                    </button>
-
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        className="text-primary hover:underline text-sm"
-                      >
-                        Forgot Password?
-                      </button>
-                    </div>
-
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={toggleMode}
-                        className="bg-accent hover:bg-accent/80 text-accent-foreground px-8 py-3 rounded-lg transition-colors font-semibold"
-                      >
-                        Create new account
-                      </button>
-                    </div>
-                  </form>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="signup"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div className="mb-4">
-                    <h2 className="text-center mb-2">Sign Up</h2>
-                    <p className="text-center text-sm text-muted-foreground">It's quick and easy.</p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      value={name}
-                      onChange={(e) => setName(normalizeUsername(e.target.value))}
-                      maxLength={MAX_USERNAME_LENGTH}
-                      className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      placeholder="Username"
-                    />
-
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
-                        name="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow pr-12"
-                        placeholder="New password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 5C7 5 2.73 8.11 1 12.46c1.73 4.35 6 7.54 11 7.54s9.27-3.19 11-7.54C21.27 8.11 17 5 12 5m0 9c-1.38 0-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 11.5c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm7.31-7.31l.41.41 1.15 1.15c1.49 1.26 2.68 2.89 3.43 4.75-1.73 4.39-6 7.5-11 7.5-1.4 0-2.74-.25-3.98-.7l.41.41 2.15 2.15C10.74 16.87 11.35 17 12 17c2.76 0 5-2.24 5-5 0-.79-.2-1.53-.53-2.2l2.31 2.31c.13-.4.22-.82.22-1.27 0-2.76-2.24-5-5-5-.45 0-.87.09-1.27.22l2.15 2.15z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full bg-background px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-shadow pr-12"
-                        placeholder="Confirm password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showConfirmPassword ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 5C7 5 2.73 8.11 1 12.46c1.73 4.35 6 7.54 11 7.54s9.27-3.19 11-7.54C21.27 8.11 17 5 12 5m0 9c-1.38 0-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 11.5c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm7.31-7.31l.41.41 1.15 1.15c1.49 1.26 2.68 2.89 3.43 4.75-1.73 4.39-6 7.5-11 7.5-1.4 0-2.74-.25-3.98-.7l.41.41 2.15 2.15C10.74 16.87 11.35 17 12 17c2.76 0 5-2.24 5-5 0-.79-.2-1.53-.53-2.2l2.31 2.31c.13-.4.22-.82.22-1.27 0-2.76-2.24-5-5-5-.45 0-.87.09-1.27.22l2.15 2.15z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-
-                    <AnimatePresence mode="wait">
-                      {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="text-destructive text-sm"
-                        >
-                          {error}
-                        </motion.div>
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 5C7 5 2.73 8.11 1 12.46c1.73 4.35 6 7.54 11 7.54s9.27-3.19 11-7.54C21.27 8.11 17 5 12 5m0 9c-1.38 0-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 11.5c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm7.31-7.31l.41.41 1.15 1.15c1.49 1.26 2.68 2.89 3.43 4.75-1.73 4.39-6-7.5-11-7.5-1.4 0-2.74-.25-3.98-.7l.41.41 2.15 2.15C10.74 16.87 11.35 17 12 17c2.76 0 5-2.24 5-5 0-.79-.2-1.53-.53-2.2l2.31 2.31c.13-.4.22-.82.22-1.27 0-2.76-2.24-5-5-5-.45 0-.87.09-1.27.22l2.15 2.15z" />
+                        </svg>
                       )}
-                    </AnimatePresence>
-
-                    <p className="text-xs text-muted-foreground text-center">
-                      By clicking Sign Up, you agree to our Terms, Data Policy and Cookie Policy.
-                    </p>
-
-                    <div className="flex gap-3">
-                      <button
-                        type="submit"
-                        disabled={isSubmittingAuth}
-                        className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground px-8 py-3 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors font-semibold"
+                    </button>
+                  </div>
+                  <AnimatePresence mode="wait">
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="text-destructive text-sm"
                       >
-                        {isSubmittingAuth ? 'Creating account...' : 'Sign Up'}
-                      </button>
-                    </div>
+                        {error}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                    <div className="text-center pt-4">
-                      <button
-                        type="button"
-                        onClick={toggleMode}
-                        className="text-primary hover:underline text-sm font-medium"
-                      >
-                        Already have an account?
-                      </button>
-                    </div>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingAuth}
+                    className="w-full bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity font-semibold"
+                  >
+                    {isSubmittingAuth ? 'Please wait...' : 'Log in'}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      className="text-primary hover:underline text-sm"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
           </div>
         </motion.div>
       </div>

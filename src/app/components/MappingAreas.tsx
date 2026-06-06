@@ -1762,6 +1762,13 @@ export function MappingAreas({ initialTab = 'map' }: MappingAreasProps) {
                   <input
                     type="date"
                     required
+                    min={(() => {
+                      const today = new Date();
+                      const year = today.getFullYear();
+                      const month = String(today.getMonth() + 1).padStart(2, '0');
+                      const day = String(today.getDate()).padStart(2, '0');
+                      return `${year}-${month}-${day}`;
+                    })()}
                     value={editForm.monitoring_date}
                     onChange={(e) => setEditForm(prev => ({ ...prev, monitoring_date: e.target.value }))}
                     className="w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
